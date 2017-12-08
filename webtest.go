@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/md5"
 	"crypto/rand"
 	"encoding/base64"
@@ -115,7 +116,8 @@ func main() {
 	foo.Foo()
 	foo2()
 	timer()
-
+	templateTest()
+	return
 	http.HandleFunc("/login", login)
 	http.HandleFunc("/han", han)
 	http.HandleFunc("/upload", lib.Upload)
@@ -150,4 +152,35 @@ func timer() {
 	time.AfterFunc(10*time.Second, func() {
 		timer()
 	})
+}
+
+func templateTest() {
+	type hobby struct {
+		Str string
+	}
+
+	type persion struct {
+		Name  string
+		Age   int8
+		Hobby []hobby
+	}
+	const tplstr = `
+		hello {{.Name}}! {{.Age}}
+		{{range .Hobby}}
+			{{with .}}
+				hobby.str = {{.Str}}
+			{{end}}
+		{{end}}
+	`
+	t := template.New("test")
+	t, err := t.Parse(tplstr)
+	handErr(err)
+
+	h1 := hobby{Str: "node"}
+	h2 := hobby{Str: "go"}
+	p := persion{Name: "zengming", Age: 24, Hobby: []hobby{h1, h2}}
+
+	var buf bytes.Buffer
+	t.Execute(&buf, p)
+	fmt.Println(buf.String())
 }
