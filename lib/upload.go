@@ -10,7 +10,7 @@ import (
 
 func Upload(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
-		err := r.ParseMultipartForm(1024 * 1024)
+		err := r.ParseMultipartForm(1024)
 		handErr(err)
 		v := r.MultipartForm.Value["data"]
 		v2 := r.Form.Get("data")

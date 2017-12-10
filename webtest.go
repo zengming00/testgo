@@ -16,8 +16,8 @@ import (
 	"strconv"
 	"time"
 
-	"webtest/foo"
-	"webtest/lib"
+	"github.com/zengming00/testgo/foo"
+	"github.com/zengming00/testgo/lib"
 )
 
 func login(w http.ResponseWriter, r *http.Request) {
@@ -117,7 +117,6 @@ func main() {
 	foo2()
 	timer()
 	templateTest()
-	return
 	http.HandleFunc("/login", login)
 	http.HandleFunc("/han", han)
 	http.HandleFunc("/upload", lib.Upload)
