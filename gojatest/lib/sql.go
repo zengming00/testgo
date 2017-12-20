@@ -2,9 +2,12 @@ package lib
 
 import (
 	"database/sql"
+	"errors"
+	"reflect"
 
 	"github.com/dop251/goja"
 	"github.com/dop251/goja_nodejs/require"
+	"github.com/go-sql-driver/mysql"
 )
 
 type sqlRuntime struct {
@@ -27,11 +30,49 @@ func (This *rowsObj) err(call goja.FunctionCall) goja.Value {
 }
 
 func (This *rowsObj) scan(call goja.FunctionCall) goja.Value {
-	// 		err = rows.Scan(&id, &username, &realname, &password, &createdAt, &updatedAt)
-	// if err != nil {
-	// 	panic(This.runtime.NewGoError(err))
-	// }
-	return nil
+	rows := This.rows
+	cols, err := rows.Columns()
+	if err != nil {
+		panic(This.runtime.NewGoError(err))
+	}
+	ct, err := rows.ColumnTypes()
+	if err != nil {
+		panic(This.runtime.NewGoError(err))
+	}
+
+	arr := make([]interface{}, len(ct))
+	for i, v := range ct {
+		t := v.ScanType()
+		arr[i] = reflect.New(t).Interface()
+	}
+
+	err = rows.Scan(arr...)
+	if err != nil {
+		panic(This.runtime.NewGoError(err))
+	}
+
+	m := make(map[string]interface{})
+	for i, col := range cols {
+		switch vv := arr[i].(type) {
+		case *int32:
+			m[col] = *vv
+		case *sql.NullString:
+			m[col] = *vv
+		case *sql.NullBool:
+			m[col] = *vv
+		case *sql.NullFloat64:
+			m[col] = *vv
+		case *sql.NullInt64:
+			m[col] = *vv
+		case *sql.RawBytes:
+			m[col] = string(*vv)
+		case *mysql.NullTime:
+			m[col] = *vv
+		default:
+			panic(This.runtime.NewGoError(errors.New("unknown type")))
+		}
+	}
+	return This.runtime.ToValue(m)
 }
 
 func (This *rowsObj) next(call goja.FunctionCall) goja.Value {
