@@ -106,6 +106,11 @@ func (This *sqlObj) query(call goja.FunctionCall) goja.Value {
 	return o
 }
 
+func (This *sqlObj) close(call goja.FunctionCall) goja.Value {
+	err := This.db.Close()
+	return This.runtime.ToValue(err)
+}
+
 func (This *sqlRuntime) newFunc(call goja.FunctionCall) goja.Value {
 	driverName := call.Argument(0).String()
 	dataSourceName := call.Argument(1).String()
@@ -119,6 +124,7 @@ func (This *sqlRuntime) newFunc(call goja.FunctionCall) goja.Value {
 	}
 	o := This.runtime.NewObject()
 	o.Set("query", obj.query)
+	o.Set("close", obj.close)
 	return o
 }
 
