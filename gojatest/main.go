@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"time"
 
@@ -20,7 +21,20 @@ func handErr(err error) {
 	}
 }
 
+func handler(w http.ResponseWriter, r *http.Request) {
+	u := r.URL
+	ret := runFile("." + u.Path)
+	w.Write([]byte(ret))
+}
+
+func server() {
+	http.HandleFunc("/", handler)
+	err := http.ListenAndServe(":8080", nil)
+	handErr(err)
+}
+
 func main() {
+	server()
 	if len(os.Args) != 2 {
 		fmt.Println("please input a file name")
 		os.Exit(1)
@@ -33,6 +47,10 @@ func main() {
 	str := string(datas)
 	_ = str
 
+	runFile(filename)
+}
+
+func runFile(filename string) string {
 	runtime := goja.New()
 
 	registry := new(require.Registry) // this can be shared by multiple runtimes
@@ -49,11 +67,11 @@ func main() {
 	if err != nil {
 		if interruptErr, ok := err.(*goja.InterruptedError); ok {
 			fmt.Println("InterruptedError:", interruptErr)
-			return
 		}
 		panic(err)
 	}
-	if val := v.Export(); val != nil {
-		// fmt.Println(val)
-	}
+
+	val := v.Export()
+	fmt.Println(val)
+	return v.String()
 }
