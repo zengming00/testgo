@@ -9,7 +9,7 @@ log(redis.string(v))
 v = conn.do('keys', '*')
 if(Array.isArray(v)){
   v.forEach(function(item){
-    println(utils.toStr(item))
+    println(utils.toString(item))
   });
 }
 var ret = conn.close()

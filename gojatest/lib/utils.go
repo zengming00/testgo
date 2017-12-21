@@ -16,12 +16,12 @@ func (This *utilsRuntime) print(call goja.FunctionCall) goja.Value {
 	return nil
 }
 
-func (This *utilsRuntime) toStr(call goja.FunctionCall) goja.Value {
+func (This *utilsRuntime) toString(call goja.FunctionCall) goja.Value {
 	data := call.Argument(0).Export()
 	if bts, ok := data.([]byte); ok {
 		return This.runtime.ToValue(string(bts))
 	}
-	panic(This.runtime.NewTypeError("toStr data is not a byte array"))
+	panic(This.runtime.NewTypeError("toString data is not a byte array"))
 }
 
 func init() {
@@ -32,6 +32,6 @@ func init() {
 
 		o := module.Get("exports").(*goja.Object)
 		o.Set("print", This.print)
-		o.Set("toStr", This.toStr)
+		o.Set("toString", This.toString)
 	})
 }

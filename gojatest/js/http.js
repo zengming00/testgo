@@ -4,7 +4,7 @@ var utils = require("utils")
 var url = require('url')
 
 var data = file.read('./js/b.js')
-console.log(utils.toStr(data))
+console.log(utils.toString(data))
 console.log(url.queryEscape("asdf/asdf"))
 
 var obj = {
@@ -21,7 +21,7 @@ var url = "http://esee.rabbitpre.com/api/rabuser/login"
 var body = JSON.stringify(obj)
 var data = http.request(method, url, header, body, 3000)
 
-data.body = utils.toStr(data.body);
+data.body = utils.toString(data.body);
 console.log("data:", JSON.stringify(data, null, 2))
 console.log("Set-Cookie:", data.header['Set-Cookie'][0])
 
