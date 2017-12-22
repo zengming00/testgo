@@ -18,12 +18,17 @@ var data = {
   names: ['foo', 'bar', '"baz']
 };
 
+var result;
+
 ejs.renderFile('./js/ejs/list.ejs', data, function (err, html) {
   if (err) {
     console.log(err);
     return
   }
   console.log(html);
+  result = html;
 });
 
 console.log('ejs version:', ejs.VERSION)
+
+result;

@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	_ "github.com/zengming00/testgo/gojatest/lib"
@@ -23,8 +25,28 @@ func handErr(err error) {
 
 func handler(w http.ResponseWriter, r *http.Request) {
 	u := r.URL
-	ret := runFile("." + u.Path)
-	w.Write([]byte(ret))
+	cwd, err := os.Getwd()
+	handErr(err)
+	file := filepath.Join(cwd, u.Path)
+	if strings.HasPrefix(file, cwd) {
+		ext := filepath.Ext(file)
+		if ext == ".js" {
+			ret, err := runFile(file)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(err.Error()))
+				return
+			}
+			if goja.IsNull(*ret) || goja.IsUndefined(*ret) {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.Write([]byte((*ret).String()))
+			return
+		}
+	}
+	w.WriteHeader(http.StatusInternalServerError)
 }
 
 func server() {
@@ -34,44 +56,53 @@ func server() {
 }
 
 func main() {
-	server()
 	if len(os.Args) != 2 {
 		fmt.Println("please input a file name")
 		os.Exit(1)
 	}
 	filename := os.Args[1]
-	f, err := os.Open(filename)
-	handErr(err)
-	datas, err := ioutil.ReadAll(f)
-	handErr(err)
-	str := string(datas)
-	_ = str
 
-	runFile(filename)
+	r, err := runFile(filename)
+	if err != nil {
+		switch err := err.(type) {
+		case *goja.Exception:
+			fmt.Println(err.String())
+		case *goja.InterruptedError:
+			fmt.Println(err.String())
+		default:
+			fmt.Println(err)
+		}
+		os.Exit(64)
+	}
+	fmt.Println(*r)
+	server()
 }
 
-func runFile(filename string) string {
+func runFile(filename string) (*goja.Value, error) {
+	src, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+
 	runtime := goja.New()
 
-	registry := new(require.Registry) // this can be shared by multiple runtimes
-	req := registry.Enable(runtime)
+	// this can be shared by multiple runtimes
+	registry := new(require.Registry)
+	registry.Enable(runtime)
 	console.Enable(runtime)
 
 	time.AfterFunc(60*time.Second, func() {
 		runtime.Interrupt("run code timeout, halt")
 	})
-	// 直接执行时，如果有错误，无法知道是在哪个文件报的错
-	// v, err := runtime.RunString(str)
-	v, err := req.Require(filename)
 
+	prg, err := goja.Compile(filename, string(src), false)
 	if err != nil {
-		if interruptErr, ok := err.(*goja.InterruptedError); ok {
-			fmt.Println("InterruptedError:", interruptErr)
-		}
-		panic(err)
+		return nil, err
 	}
 
-	val := v.Export()
-	fmt.Println(val)
-	return v.String()
+	result, err := runtime.RunProgram(prg)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
 }

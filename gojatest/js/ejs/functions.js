@@ -25,5 +25,5 @@ var content = fileLoader(path);
 var ret = ejs.compile(content, {filename: path})(data);
 console.log(ret);
 console.log('ejs version:', ejs.VERSION);
-module.exports=ret;
+ret;
 
